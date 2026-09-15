@@ -723,7 +723,6 @@ def is_verified(user_id):
     return (
         row["kyc_status"] == "APPROVED"
         and row["sham_status"] == "APPROVED"
-        and row["email_verified"] == 1
     )
 
 
@@ -1178,19 +1177,10 @@ async def kyc_start(
         await update.message.reply_text("✅ تم اعتماد KYC الخاص بك.")
         return ConversationHandler.END
 
-    # Email verification is deliberately the FIRST step of KYC.
-    if not row or not row["email_verified"]:
-        await update.message.reply_text(
-            "🪪 التوثيق KYC\n\n"
-            "📧 الخطوة 1 من التوثيق: أرسل بريدك الإلكتروني:\n\n"
-            "سيتم إرسال رمز تحقق إلى البريد، وبعد تأكيده نكمل التوثيق مباشرة."
-        )
-        return KYC_EMAIL
-
+    # Email verification is NOT part of KYC.
     await update.message.reply_text(
         "🪪 التوثيق KYC\n\n"
-        "📧 البريد الإلكتروني: ✅ موثق\n\n"
-        "👤 الخطوة التالية: أرسل الاسم الكامل:"
+        "👤 أرسل الاسم الكامل:"
     )
     return KYC_NAME
 
@@ -1382,13 +1372,6 @@ async def kyc_sham_code(update, context):
 
     if not user_row:
         await update.message.reply_text("❌ لم يتم العثور على حسابك.")
-        return ConversationHandler.END
-
-    if not user_row["email_verified"]:
-        # Defensive check; normal flow verifies email at the beginning.
-        await update.message.reply_text(
-            "❌ البريد الإلكتروني غير موثق. أعد بدء التوثيق ليتم التحقق منه أولاً."
-        )
         return ConversationHandler.END
 
     conn = db()
@@ -6238,12 +6221,6 @@ def build_kyc_conversation():
             )
         ],
         states={
-            KYC_EMAIL: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, kyc_email)
-            ],
-            KYC_EMAIL_CODE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, kyc_email_code)
-            ],
             KYC_NAME: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, kyc_name)
             ],
