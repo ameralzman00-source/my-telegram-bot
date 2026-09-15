@@ -1,5 +1,2 @@
-python-telegram-bot
-requests
+python-telegram-bot[job-queue]
 python-dotenv
-APScheduler
-pyTelegramBotAPI
